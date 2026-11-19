@@ -17,31 +17,32 @@ print("Celdas vacías:", df.isna().sum().sum())
 print("\nTipos de dato:")
 print(df.dtypes)
 
-medidas = df.drop(columns="Class")
+medidas = df.drop(columns="Class").columns
 print("\n¿Las 16 medidas son numéricas?",
-      all(pd.api.types.is_numeric_dtype(t) for t in medidas.dtypes))
-print("¿Hay medidas con valor cero o negativo?", (medidas <= 0).any().any())
+      all(pd.api.types.is_numeric_dtype(t) for t in df[medidas].dtypes))
+print("¿Hay medidas con valor cero o negativo?",
+      (df[medidas] <= 0).any().any())
 
 print("\nVariedades encontradas:")
 print(df["Class"].value_counts())
 
-# 4. Revisar y quitar los duplicados exactos
+# 4. Quitar filas con datos inválidos
+filas_invalidas = (
+    df.isna().any(axis=1) |
+    (df[medidas] <= 0).any(axis=1)
+)
+print("\nFilas con vacíos o medidas menores o iguales a cero:",
+      filas_invalidas.sum())
+df = df.loc[~filas_invalidas].copy()
+print("Filas eliminadas por datos inválidos:", filas_invalidas.sum())
+
+# 5. Revisar y quitar los duplicados exactos
 print("\nFilas duplicadas:", df.duplicated().sum())
 df = df.drop_duplicates()
 filas_despues = len(df)
 print("Filas después de limpiar:", filas_despues)
 print("Filas eliminadas:", filas_antes - filas_despues)
 
-# 5. Guardar la tabla limpia
+# 6. Guardar la tabla limpia
 df.to_csv(CARPETA / "datos_limpios.csv", index=False)
 print("\nArchivo guardado: datos_limpios.csv")
-
-
-#Cambios realizados en la limpieza:
-#- Se leyó la hoja Dry_Beans_Dataset del Excel: 13,611 filas y 17 columnas.
-#- Se revisó la calidad: no hay celdas vacías, las 16 medidas son numéricas
-#  y ninguna tiene valores de cero o negativos.
-#- Se encontraron 68 filas duplicadas exactas y se eliminaron, conservando
-#  la primera aparición de cada una.
-#- Quedaron 13,543 filas y siguen presentes las 7 variedades.
-#- La tabla limpia se guardó en datos_limpios.csv.
